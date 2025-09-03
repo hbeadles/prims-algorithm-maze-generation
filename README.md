@@ -4,6 +4,9 @@ Prim's Algorithm is a tree-based algorithm that can be used to generate mazes.
 This allows you to visualize the maze generation process and mess around with colors, 
 cell sizes, etc. It also allows you to add rooms. 
 
+<div style="text-align: center;">
+    <img src="output/output.png" alt="Example Image" width="400px" height="400px">
+</div>
 View it in the browser!:
 
 1. [View in Browser](https://hbeadles.github.io/prims-algorithm-maze-generation/maze.html)
