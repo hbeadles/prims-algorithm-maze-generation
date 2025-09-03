@@ -1,7 +1,7 @@
 ## Visualizing Mazes with Prim's Algorithm 
 
-Prim's Algorithm is a tree-based algorithm I built that can be used to generate mazes. 
-This allows you to visualize the maze generation process and mess around with colors, 
+Prim's Algorithm is a tree-based algorithm that can be used to generate mazes. 
+I added a visual simulation for it that allows you to visualize the maze generation process and mess around with colors, 
 cell sizes, etc. It also allows you to add rooms. 
 
 <div style="text-align: center;">
