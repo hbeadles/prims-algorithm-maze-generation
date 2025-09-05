@@ -32,7 +32,6 @@ class Game{
         SDL_Window* mWindow{};
         SDL_Renderer* mRenderer{};
         Uint32 mTicksCount;
-
         int uiNumRooms=0;
         int uiRoomWidth = 5;
         int uiRoomHeight = 5;

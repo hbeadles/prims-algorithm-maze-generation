@@ -75,7 +75,9 @@ bool initSDL(Application &app, const std::string& title){
             }
         }
     }
-    SDL_ShowCursor(SDL_DISABLE);
+    if (success) {
+        SDL_ShowCursor(SDL_DISABLE);
+    }
     return success;
 }
 

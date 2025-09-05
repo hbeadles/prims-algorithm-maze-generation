@@ -31,11 +31,13 @@ private:
     int pixelSize;
     Game* game{};
     ColorConfig* mazeColorConfig{};
+    SDL_Texture* mazeTexture{};
     bool mazeComplete;
     int numCellX{};
     int numCellY{};
     SDL_Color background{};
     SDL_Color wallColor{};
+    void drawRectangle(Uint32* &pixelBuffer, int x, int y, int w, int h, const Uint32 & color);
     std::vector<MazeElement> maze;
     std::unordered_set<int> frontier;
     void chooseWallCandidate(int frontierCell);

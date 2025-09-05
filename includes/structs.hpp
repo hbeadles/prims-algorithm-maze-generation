@@ -18,7 +18,17 @@ struct MazeRenderConfig {
     int roomWidth;
     int roomHeight;
     int pixelSize = 10;
+    float angle = 0.0f;
+    static constexpr float epsilon = 1e-6f; // Baked right into the struct
 
+    bool operator==(const MazeRenderConfig& other) const {
+        return renderByFrame == other.renderByFrame &&
+               numRooms == other.numRooms &&
+               roomWidth == other.roomWidth &&
+               roomHeight == other.roomHeight &&
+               pixelSize == other.pixelSize &&
+               std::abs(angle - other.angle) < epsilon; // Use the struct's epsilon
+    }
     // Computes a hash of the configuration values.
     [[nodiscard]] size_t hash() const {
         size_t seed = 0;
@@ -29,6 +39,7 @@ struct MazeRenderConfig {
         seed ^= int_hash(roomWidth) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= int_hash(roomHeight) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= int_hash(pixelSize) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= std::hash<float>()(angle) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
     }
 };

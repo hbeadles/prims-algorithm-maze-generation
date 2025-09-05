@@ -52,6 +52,13 @@ void MazeComplex::initMazeComplex(){
     this->mazeComplete = false;
     this->numCellX = game->app.screenWidth / pixelSize;
     this->numCellY = game->app.screenHeight / pixelSize;
+    mazeTexture = SDL_CreateTexture(
+        game->app.renderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        game->app.screenWidth,
+        game->app.screenHeight
+    );
     for(int i =0; i < numCellX * numCellY; i++){
         int gridX = i % numCellX;
         int gridY = i / numCellX;
@@ -496,6 +503,21 @@ Direction MazeComplex::getOppositeDirection(Direction direction){
     }
 }
 
+
+void MazeComplex::drawRectangle(Uint32* &pixelBuffer, int x, int y, int w, int h, const Uint32 & color) {
+    for (int sub_h = 0; sub_h < h; sub_h++) {
+        for (int sub_w =0; sub_w < w; sub_w++) {
+            int pixelX = x + sub_w;
+            int pixelY = y + sub_h;
+            if (pixelX < game->app.screenWidth && pixelY < game->app.screenHeight) {
+                pixelBuffer[pixelY * game->app.screenWidth + pixelX] = color;
+            }
+        }
+    }
+}
+
+
+
 /**
  * @name displayMazeComplex
  * @brief Our rendering function. Two main loops:
@@ -506,98 +528,92 @@ Direction MazeComplex::getOppositeDirection(Direction direction){
  * by creating a texture and drawing to that one directly for all calls.
  * @param currentTime
  */
-void MazeComplex::displayMazeComplex(Uint32 currentTime){
+void MazeComplex::displayMazeComplex(Uint32 currentTime) {
     SDL_SetRenderDrawColor(game->app.renderer, background.r, background.g, background.b, background.a);
     SDL_RenderClear(game->app.renderer);
-    // Draw color shift 
-    for(const auto& mazeElem: maze){
-        auto structure = mazeElem.parentStructure;
-        if (mazeElem.visited){
-            SDL_Color color = generateColor(mazeElem.distance, currentTime);
-
-            SDL_SetRenderDrawColor(game->app.renderer, color.r * 0.8, color.g * 0.8, color.b * 0.8, color.a);
-            SDL_Rect cellRect = {
-                mazeElem.gridX * pixelSize,
-                mazeElem.gridY * pixelSize,
-                pixelSize,
-                pixelSize
-            };
-            SDL_RenderFillRect(game->app.renderer, &cellRect);
-        }
-        if (structure->structure == ROOM){
-            bool allperimeter_elems_covered = true;
-            for(auto e: structure->perimeterCells){
-                MazeElement elem = maze[e.cell];
-                if (!elem.visited){
-                    allperimeter_elems_covered = false;
-                }
-            }
-            if (allperimeter_elems_covered){
-                int sX = structure->startX;
-                int sY = structure->startY;
-                int height = structure->height;
-                int width = structure->width;
-                for (int y = sY; y < sY + height; y++){
-                    for (int x = sX; x < sX + width; x++){
-                        int cellIndex = y * numCellX + x;
-                        auto cellElem = maze[cellIndex];
-                        SDL_Color color = generateColor(cellElem.distance, currentTime);
-
-                        SDL_SetRenderDrawColor(game->app.renderer, color.r * 0.8, color.g * 0.8, color.b * 0.8, color.a);
-                        SDL_Rect cellRect = {
-                            cellElem.gridX * pixelSize,
-                            cellElem.gridY * pixelSize,
-                            pixelSize,
-                            pixelSize
-                        };
-                        SDL_RenderFillRect(game->app.renderer, &cellRect);
+    void* pixels;
+    int pitch;
+    float angle = game->renderConfig.angle;
+    if (SDL_LockTexture(mazeTexture, nullptr, &pixels, &pitch) == 0) {
+        auto* pixel_buffer = (Uint32*)pixels;
+        // Draw color shift
+        for (const auto& mazeElem : maze) {
+            auto structure = mazeElem.parentStructure;
+            if (mazeElem.visited) {
+                SDL_Color color = generateColor(mazeElem.distance, currentTime);
+                Uint32 colorValue = (color.a << 24) | (color.r << 16) | (color.g << 8) | color.b;
+                drawRectangle(pixel_buffer, mazeElem.gridX * pixelSize,
+                    mazeElem.gridY * pixelSize, pixelSize, pixelSize, colorValue);
+            }else if (structure->structure == ROOM){
+                bool allperimeter_elems_covered = true;
+                for(auto e: structure->perimeterCells){
+                    MazeElement elem = maze[e.cell];
+                    if (!elem.visited){
+                        allperimeter_elems_covered = false;
                     }
                 }
-                
+                if (allperimeter_elems_covered) {
+                    int sX = structure->startX;
+                    int sY = structure->startY;
+                    int height = structure->height;
+                    int width = structure->width;
+
+                    for (int y = sY; y < sY + height; y++){
+                        for (int x = sX; x < sX + width; x++){
+                            int cellIndex = y * numCellX + x;
+                            auto cellElem = maze[cellIndex];
+                            SDL_Color color = generateColor(cellElem.distance, currentTime);
+                            Uint32 colorValue = (color.a << 24) | (color.r << 16) | (color.g << 8) | color.b;
+                            int x_point = mazeElem.gridX * pixelSize;
+                            int y_point = mazeElem.gridY * pixelSize;
+                            drawRectangle(pixel_buffer, x_point, y_point, pixelSize, pixelSize, colorValue);
+                        }
+                    }
+                }
+            }else{
+                Uint32 colorValue = (background.a << 24) | (background.r << 16) | (background.g << 8) | background.b;
+                // Fill the corresponding pixels in the texture
+                drawRectangle(pixel_buffer, mazeElem.gridX * pixelSize,
+                    mazeElem.gridY * pixelSize, pixelSize, pixelSize, colorValue);
             }
-        }        
-    }
+        }
+        Uint32 wallColorValue = (wallColor.a << 24) | (wallColor.r << 16) | (wallColor.g << 8) | wallColor.b;
+        for (int i = 0; i < numCellX * numCellY; i++) {
+            const MazeElement& element = maze[i];
+            int x = element.gridX * pixelSize;
+            int y = element.gridY * pixelSize;
 
-
-    SDL_SetRenderDrawColor(game->app.renderer, wallColor.r, wallColor.g, wallColor.b, wallColor.a);
-
-    // Draw basic maze using perimeter cells
-    for (int i = 0; i < numCellX * numCellY; i++){
-        const MazeElement& element = maze[i];
-        int x = element.gridX * pixelSize;
-        int y = element.gridY * pixelSize;
-        
-        // Check perimeter cells for walls to draw
-        auto structure = element.parentStructure;
-        if(structure) {
-            for(const auto& perimCell : structure->perimeterCells) {
-                if(perimCell.cell == element.place && perimCell.visited) {
-                    // Draw wall based on direction
-                    switch(perimCell.direction) {
-                        case NORTH: {
-                            SDL_Rect wallRect = {x, y, pixelSize, 2};
-                            SDL_RenderFillRect(game->app.renderer, &wallRect);
-                            break;
-                        }
-                        case EAST: {
-                            SDL_Rect wallRect = {x + pixelSize - 2, y, 2, pixelSize};
-                            SDL_RenderFillRect(game->app.renderer, &wallRect);
-                            break;
-                        }
-                        case SOUTH: {
-                            SDL_Rect wallRect = {x, y + pixelSize - 2, pixelSize, 2};
-                            SDL_RenderFillRect(game->app.renderer, &wallRect);
-                            break;
-                        }
-                        case WEST: {
-                            SDL_Rect wallRect = {x, y, 2, pixelSize};
-                            SDL_RenderFillRect(game->app.renderer, &wallRect);
-                            break;
+            // Check perimeter cells for walls to draw
+            auto structure = element.parentStructure;
+            if (structure) {
+                for (const auto& perimCell : structure->perimeterCells) {
+                    if (perimCell.cell == element.place && perimCell.visited) {
+                        // Draw wall based on direction
+                        switch (perimCell.direction) {
+                            case NORTH: {
+                                drawRectangle(pixel_buffer, x, y, pixelSize, 1, wallColorValue);
+                                break;
+                            }
+                            case EAST: {
+                                drawRectangle(pixel_buffer, x+pixelSize - 1, y, 1, pixelSize, wallColorValue);
+                                break;
+                            }
+                            case SOUTH: {
+                                drawRectangle(pixel_buffer, x, y + pixelSize - 1, pixelSize, 1, wallColorValue);
+                                break;
+                            }
+                            case WEST: {
+                                drawRectangle(pixel_buffer, x, y, 1, pixelSize, wallColorValue);
+                                break;
+                            }
                         }
                     }
                 }
             }
-        }
-    }
 
+
+        }
+        SDL_UnlockTexture(mazeTexture);
+        SDL_RenderCopyEx(game->app.renderer, mazeTexture, nullptr, nullptr, angle, nullptr, SDL_FLIP_NONE);
+    }
 }

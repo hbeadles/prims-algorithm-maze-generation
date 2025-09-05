@@ -122,13 +122,17 @@ void Game::renderUI(bool *openFlag){
     ImGui::InputInt("Room Width", &currentStateConfig.roomWidth);
     ImGui::InputInt("Room Height", &currentStateConfig.roomHeight);
 
-    if (currentStateConfig.hash() != renderConfig.hash()){
+    if (!(currentStateConfig == renderConfig)) {
         renderConfig = currentStateConfig;
         uiNumRooms = renderConfig.numRooms;
         uiRoomWidth = renderConfig.roomWidth;
         uiRoomHeight = renderConfig.roomHeight;
         uiParamsChanged = true;
     }
+    ImGui::SeparatorText("Fun Settings");
+    ImGui::DragFloat("Maze Angle", &currentStateConfig.angle, 2.0f, -180.0f, 180.0f);
+    if (currentStateConfig.angle < -180.0f) currentStateConfig.angle = -180.0f;
+    if (currentStateConfig.angle > 180.0f) currentStateConfig.angle = 180.0f;
 
     if(ImGui::Button("Regenerate Maze")) {
         uiParamsChanged = true;
